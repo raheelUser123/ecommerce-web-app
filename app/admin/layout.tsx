@@ -7,7 +7,7 @@ export default function AdminLayout({
 }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6">
-      <aside className="card h-fit md:sticky md:top-24 space-y-3">
+      <aside className=" h-fit md:sticky md:top-24 space-y-3">
         <h2 className="text-xl font-extrabold text-dark mb-4">Admin Panel</h2>
 
         <Link className="btn w-full justify-center" href="/admin">
