@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-export default async function ProductsPage() {
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: { created?: string };
+}) {
   const { data: products } = await supabase
     .from("products")
     .select("*")
@@ -11,7 +15,11 @@ export default async function ProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Products</h1>
-
+{searchParams.created === "1" && (
+  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
+    ✅ Product has been added successfully.
+  </div>
+)}
         <Link
           href="/admin/products/new"
           className="btn btn-primary"

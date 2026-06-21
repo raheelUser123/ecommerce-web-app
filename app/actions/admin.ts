@@ -113,5 +113,5 @@ export async function createProduct(formData: FormData) {
     }
   }
 
-  redirect("/admin/products");
+  redirect("/admin/products?created=1");
 }
