@@ -4,14 +4,15 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: Request) {
   try {
-    const { items } = await req.json();
+    const { items, customer } = await req.json();
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
 
     const subtotal = items.reduce(
-      (sum: number, item: any) => sum + Number(item.price) * Number(item.quantity),
+      (sum: number, item: any) =>
+        sum + Number(item.price) * Number(item.quantity || 1),
       0
     );
 
@@ -25,12 +26,22 @@ export async function POST(req: Request) {
         total_amount: total,
         payment_status: "pending",
         order_status: "pending",
+        customer_first_name: customer?.firstName || "",
+        customer_last_name: customer?.lastName || "",
+        customer_email: customer?.email || "",
+        customer_address: customer?.address || "",
+        customer_city: customer?.city || "",
+        customer_state: customer?.state || "",
+        customer_postal_code: customer?.postalCode || "",
       })
       .select("*")
       .single();
 
-    if (orderError) {
-      return NextResponse.json({ error: orderError.message }, { status: 500 });
+    if (orderError || !order) {
+      return NextResponse.json(
+        { error: orderError?.message || "Order creation failed" },
+        { status: 500 }
+      );
     }
 
     const orderItems = items.map((item: any) => ({
@@ -39,20 +50,30 @@ export async function POST(req: Request) {
       variation_id: item.variation_id || null,
       product_title: item.title,
       variation_detail: item.variant || "Default",
-      quantity: item.quantity,
-      price: item.price,
-      subtotal: Number(item.price) * Number(item.quantity),
+      quantity: Number(item.quantity || 1),
+      price: Number(item.price || 0),
+      subtotal: Number(item.price || 0) * Number(item.quantity || 1),
     }));
 
-    await supabaseAdmin.from("order_items").insert(orderItems);
+    const { error: orderItemsError } = await supabaseAdmin
+      .from("order_items")
+      .insert(orderItems);
+
+    if (orderItemsError) {
+      return NextResponse.json(
+        { error: orderItemsError.message },
+        { status: 500 }
+      );
+    }
 
     const origin =
       req.headers.get("origin") ||
       process.env.NEXT_PUBLIC_SITE_URL ||
-      "https://ecommerce-web-app-pi-six.vercel.app";
+      "http://localhost:3000";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      customer_email: customer?.email || undefined,
       line_items: items.map((item: any) => ({
         price_data: {
           currency: "usd",
@@ -66,6 +87,8 @@ export async function POST(req: Request) {
       })),
       metadata: {
         order_id: order.id,
+        order_number: String(order.order_number || ""),
+        customer_email: customer?.email || "",
       },
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart`,
@@ -80,6 +103,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: session.url });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Stripe checkout error" },
+      { status: 500 }
+    );
   }
 }

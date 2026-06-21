@@ -30,6 +30,7 @@ export default function AddToCartButton({ product }: { product: any }) {
     }
 
     localStorage.setItem("cart", JSON.stringify(cart));
+    window.dispatchEvent(new Event("cart-updated"));
     alert("Product added to cart");
   }
 

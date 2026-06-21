@@ -2,7 +2,7 @@ import "./globals.css";
 import Link from "next/link";
 import { Outfit } from "next/font/google";
 import { ShoppingBag, Search, User, Mail } from "lucide-react";
-
+import HeaderCartIcon from "@/components/HeaderCartIcon";
 const outfit = Outfit({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
@@ -51,12 +51,7 @@ export default function RootLayout({
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
               </div>
 
-              <Link href="/cart" className="relative p-2.5 text-dark hover:text-primary hover:bg-primary-light rounded-full transition-all">
-                <ShoppingBag className="w-5 h-5" />
-                <span className="absolute top-1 right-1 bg-primary text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">
-                  2
-                </span>
-              </Link>
+              <HeaderCartIcon />
 
               <Link href="/admin" className="p-2.5 text-dark hover:text-primary hover:bg-primary-light rounded-full transition-all">
                 <User className="w-5 h-5" />
