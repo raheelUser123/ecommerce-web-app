@@ -1,157 +1,129 @@
-import { createProduct } from "@/app/actions/admin";
-import { supabase } from "@/lib/supabase";
+import Link from "next/link";
+import { supabaseAdmin } from "@/lib/supabase";
+import { deleteProduct } from "@/app/actions/admin";
 
-export default async function NewProductPage() {
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("status", "active")
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: { success?: string };
+}) {
+  const { data: products } = await supabaseAdmin
+    .from("products")
+    .select("*, product_variations(*), product_gallery(*)")
     .order("created_at", { ascending: false });
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-zinc-200 pb-5">
-        <h1 className="text-3xl font-extrabold text-dark">Add New Product</h1>
-        <p className="text-muted text-sm mt-1">
-          Product, main image, gallery and variations upload.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold">Products</h1>
+          <p className="text-muted text-sm mt-1">Manage all store products.</p>
+        </div>
+
+        <Link href="/admin/products/new" className="btn btn-primary">
+          + Add Product
+        </Link>
       </div>
 
-      <form action={createProduct} className="space-y-6">
-        <div className="card space-y-4">
-          <h2 className="text-xl font-bold text-dark">Product Details</h2>
-
-          <div>
-            <label className="text-xs font-bold uppercase">Title</label>
-            <input name="title" required className="input mt-1" />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold uppercase">Slug</label>
-            <input
-              name="slug"
-              placeholder="auto-generate if empty"
-              className="input mt-1"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold uppercase">Description</label>
-            <textarea
-              name="description"
-              rows={5}
-              className="input mt-1"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-bold uppercase">Category</label>
-            <select name="category_id" className="input mt-1">
-              <option value="">Select category</option>
-              {categories?.map((cat: any) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-xs font-bold uppercase">Status</label>
-            <select name="status" className="input mt-1">
-              <option value="active">Active</option>
-              <option value="draft">Draft</option>
-            </select>
-          </div>
+      {searchParams.success && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700">
+          ✅ {searchParams.success}
         </div>
+      )}
 
-        <div className="card space-y-4">
-          <h2 className="text-xl font-bold text-dark">Images</h2>
+      <div className="card overflow-auto p-0">
+        <table className="w-full text-sm">
+          <thead className="bg-zinc-50">
+            <tr className="border-b">
+              <th className="text-left p-4">Image</th>
+              <th className="text-left p-4">Product</th>
+              <th className="text-left p-4">Price</th>
+              <th className="text-left p-4">Variations</th>
+              <th className="text-left p-4">Gallery</th>
+              <th className="text-left p-4">Status</th>
+              <th className="text-right p-4">Actions</th>
+            </tr>
+          </thead>
 
-          <div>
-            <label className="text-xs font-bold uppercase">Main Image</label>
-            <input
-              type="file"
-              name="main_image"
-              accept="image/*"
-              className="input mt-1"
-            />
-          </div>
+          <tbody>
+            {products && products.length > 0 ? (
+              products.map((p: any) => {
+                const price = Number(p.product_variations?.[0]?.price || p.price || 0);
 
-          <div>
-            <label className="text-xs font-bold uppercase">Gallery Images</label>
-            <input
-              type="file"
-              name="gallery"
-              accept="image/*"
-              multiple
-              className="input mt-1"
-            />
-          </div>
-        </div>
+                return (
+                  <tr key={p.id} className="border-b hover:bg-zinc-50">
+                    <td className="p-4">
+                      <img
+                        src={p.main_image || "/placeholder.png"}
+                        alt={p.title}
+                        className="w-16 h-16 object-cover rounded-xl border"
+                      />
+                    </td>
 
-        <div className="card space-y-5">
-          <h2 className="text-xl font-bold text-dark">Variations</h2>
+                    <td className="p-4">
+                      <p className="font-bold text-dark">{p.title}</p>
+                      <p className="text-xs text-muted">{p.slug}</p>
+                    </td>
 
-          {[1, 2, 3, 4, 5].map((num) => (
-            <div key={num} className="border border-zinc-200 rounded-xl p-4 space-y-3">
-              <h3 className="font-bold text-dark">Variation {num}</h3>
+                    <td className="p-4 font-bold">${price.toFixed(2)}</td>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  name={`variation_name_${num}`}
-                  placeholder="Name e.g. Size"
-                  className="input"
-                />
-                <input
-                  name={`variation_value_${num}`}
-                  placeholder="Value e.g. Small"
-                  className="input"
-                />
-              </div>
+                    <td className="p-4">
+                      <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold">
+                        {p.product_variations?.length || 0}
+                      </span>
+                    </td>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input
-                  name={`variation_price_${num}`}
-                  type="number"
-                  step="0.01"
-                  placeholder="Price"
-                  className="input"
-                />
-                <input
-                  name={`variation_stock_${num}`}
-                  type="number"
-                  placeholder="Stock"
-                  className="input"
-                />
-                <input
-                  name={`variation_sku_${num}`}
-                  placeholder="SKU"
-                  className="input"
-                />
-              </div>
+                    <td className="p-4">
+                      <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold">
+                        {p.product_gallery?.length || 0}
+                      </span>
+                    </td>
 
-              <textarea
-                name={`variation_description_${num}`}
-                placeholder="Variation description"
-                rows={2}
-                className="input"
-              />
+                    <td className="p-4">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          p.status === "active"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-zinc-100 text-zinc-600"
+                        }`}
+                      >
+                        {p.status}
+                      </span>
+                    </td>
 
-              <input
-                type="file"
-                name={`variation_image_${num}`}
-                accept="image/*"
-                className="input"
-              />
-            </div>
-          ))}
-        </div>
+                    <td className="p-4">
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/product/${p.slug}`}
+                          className="rounded-xl border px-3 py-2 text-xs font-bold hover:bg-zinc-50"
+                        >
+                          View
+                        </Link>
 
-        <button type="submit" className="btn btn-primary">
-          Save Product
-        </button>
-      </form>
+                        <form action={deleteProduct}>
+                          <input type="hidden" name="id" value={p.id} />
+                          <button
+                            type="submit"
+                            className="rounded-xl bg-rose-600 px-3 py-2 text-xs font-bold text-white hover:bg-rose-700"
+                          >
+                            Delete
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td className="p-8 text-center text-muted" colSpan={7}>
+                  No products found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
