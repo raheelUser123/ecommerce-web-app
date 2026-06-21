@@ -1,0 +1,16 @@
+create extension if not exists "uuid-ossp";
+create table profiles(id uuid primary key references auth.users(id) on delete cascade,name text,email text,role text default 'user',status text default 'active',created_at timestamptz default now());
+create table categories(id uuid primary key default uuid_generate_v4(),name text not null,slug text unique not null,parent_id uuid references categories(id) on delete set null,image text,status text default 'active',created_at timestamptz default now());
+create table products(id uuid primary key default uuid_generate_v4(),title text not null,slug text unique not null,description text,main_image text,status text default 'active',created_at timestamptz default now());
+create table product_categories(id uuid primary key default uuid_generate_v4(),product_id uuid references products(id) on delete cascade,category_id uuid references categories(id) on delete cascade);
+create table product_variations(id uuid primary key default uuid_generate_v4(),product_id uuid references products(id) on delete cascade,name text not null,value text not null,description text,price numeric(10,2) not null default 0,stock int default 0,sku text,image text,created_at timestamptz default now());
+create table product_gallery(id uuid primary key default uuid_generate_v4(),product_id uuid references products(id) on delete cascade,image text not null,sort_order int default 0);
+create table carts(id uuid primary key default uuid_generate_v4(),user_id uuid references auth.users(id) on delete cascade,created_at timestamptz default now());
+create table cart_items(id uuid primary key default uuid_generate_v4(),cart_id uuid references carts(id) on delete cascade,product_id uuid references products(id),variation_id uuid references product_variations(id),quantity int default 1,price numeric(10,2));
+create table orders(id uuid primary key default uuid_generate_v4(),user_id uuid references auth.users(id),total_amount numeric(10,2),payment_status text default 'pending',order_status text default 'pending',stripe_payment_intent_id text,created_at timestamptz default now());
+create table order_items(id uuid primary key default uuid_generate_v4(),order_id uuid references orders(id) on delete cascade,product_id uuid,variation_id uuid,product_title text,variation_detail text,quantity int,price numeric(10,2),subtotal numeric(10,2));
+create table reviews(id uuid primary key default uuid_generate_v4(),user_id uuid references auth.users(id),product_id uuid references products(id) on delete cascade,rating int check(rating between 1 and 5),review text,status text default 'pending',created_at timestamptz default now());
+create table payments(id uuid primary key default uuid_generate_v4(),order_id uuid references orders(id),user_id uuid references auth.users(id),stripe_payment_id text,amount numeric(10,2),currency text default 'usd',status text,created_at timestamptz default now());
+insert into categories(name,slug) values('Kids','kids'),('Clothing','clothing');
+insert into products(title,slug,description,main_image) values('Demo Kids Product','demo-kids-product','Sample product description','');
+insert into product_variations(product_id,name,value,description,price,stock) select id,'Size','Small','Small size variation',20,10 from products where slug='demo-kids-product';
