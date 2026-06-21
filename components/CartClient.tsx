@@ -11,10 +11,13 @@ export default function CartClient() {
     setCartItems(JSON.parse(localStorage.getItem("cart") || "[]"));
   }, []);
 
-  function saveCart(items: any[]) {
-    setCartItems(items);
-    localStorage.setItem("cart", JSON.stringify(items));
-  }
+ function saveCart(items: any[]) {
+  setCartItems(items);
+  localStorage.setItem("cart", JSON.stringify(items));
+
+  // Header counter update
+  window.dispatchEvent(new Event("cart-updated"));
+}
 
   function removeItem(id: string, variationId: string | null) {
     saveCart(cartItems.filter((item) => !(item.id === id && item.variation_id === variationId)));
