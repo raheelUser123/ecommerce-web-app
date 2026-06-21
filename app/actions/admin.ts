@@ -5,7 +5,11 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 function slugify(value: string) {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
 }
 
 async function uploadFile(file: File | null, folder: string) {
@@ -26,17 +30,20 @@ async function uploadFile(file: File | null, folder: string) {
 }
 
 export async function createProduct(formData: FormData) {
-  const title = String(formData.get("title") || "");
-  const slugInput = String(formData.get("slug") || "");
+  const title = String(formData.get("title") || "").trim();
+  const slugInput = String(formData.get("slug") || "").trim();
   const description = String(formData.get("description") || "");
   const categoryId = String(formData.get("category_id") || "");
   const status = String(formData.get("status") || "active");
   const price = Number(formData.get("price") || 0);
 
+  if (!title) throw new Error("Product title is required");
+
   const slug = slugInput ? slugify(slugInput) : slugify(title);
+
   const mainImageUrl = await uploadFile(formData.get("main_image") as File | null, "main");
 
-  const { data: product, error } = await supabaseAdmin
+  const { data: product, error: productError } = await supabaseAdmin
     .from("products")
     .insert({
       title,
@@ -49,7 +56,9 @@ export async function createProduct(formData: FormData) {
     .select("*")
     .single();
 
-  if (error || !product) throw new Error(error?.message || "Product create failed");
+  if (productError || !product) {
+    throw new Error(productError?.message || "Product create failed");
+  }
 
   if (categoryId) {
     await supabaseAdmin.from("product_categories").insert({
@@ -63,10 +72,11 @@ export async function createProduct(formData: FormData) {
   for (let i = 0; i < galleryFiles.length; i++) {
     const file = galleryFiles[i];
     if (file && file.size > 0) {
-      const image = await uploadFile(file, "gallery");
+      const imageUrl = await uploadFile(file, "gallery");
+
       await supabaseAdmin.from("product_gallery").insert({
         product_id: product.id,
-        image,
+        image: imageUrl,
         sort_order: i,
       });
     }
@@ -123,20 +133,59 @@ export async function deleteProduct(formData: FormData) {
   redirect("/admin/products?success=Product deleted successfully");
 }
 
-export async function updateOrderStatus(formData: FormData) {
+export async function updateProduct(formData: FormData) {
   const id = String(formData.get("id") || "");
-  const order_status = String(formData.get("order_status") || "pending");
+  const title = String(formData.get("title") || "").trim();
+  const slugInput = String(formData.get("slug") || "").trim();
+  const description = String(formData.get("description") || "");
+  const categoryId = String(formData.get("category_id") || "");
+  const status = String(formData.get("status") || "active");
+  const price = Number(formData.get("price") || 0);
 
-  await supabaseAdmin.from("orders").update({ order_status }).eq("id", id);
+  if (!id) throw new Error("Product ID missing");
+  if (!title) throw new Error("Product title is required");
 
-  revalidatePath("/admin/orders");
-  redirect("/admin/orders?success=Order updated successfully");
+  const slug = slugInput ? slugify(slugInput) : slugify(title);
+  const mainImageFile = formData.get("main_image") as File | null;
+
+  const updateData: any = {
+    title,
+    slug,
+    description,
+    price,
+    status,
+  };
+
+  const newImageUrl = await uploadFile(mainImageFile, "main");
+  if (newImageUrl) updateData.main_image = newImageUrl;
+
+  const { error } = await supabaseAdmin.from("products").update(updateData).eq("id", id);
+  if (error) throw new Error(error.message);
+
+  await supabaseAdmin.from("product_categories").delete().eq("product_id", id);
+
+  if (categoryId) {
+    await supabaseAdmin.from("product_categories").insert({
+      product_id: id,
+      category_id: categoryId,
+    });
+  }
+
+  revalidatePath("/admin/products");
+  revalidatePath(`/admin/products/${id}/edit`);
+  revalidatePath("/");
+  revalidatePath("/shop");
+
+  redirect("/admin/products?success=Product updated successfully");
 }
+
 export async function createCategory(formData: FormData) {
-  const name = String(formData.get("name") || "");
-  const slugInput = String(formData.get("slug") || "");
+  const name = String(formData.get("name") || "").trim();
+  const slugInput = String(formData.get("slug") || "").trim();
   const parentId = String(formData.get("parent_id") || "");
   const status = String(formData.get("status") || "active");
+
+  if (!name) throw new Error("Category name is required");
 
   const slug = slugInput ? slugify(slugInput) : slugify(name);
   const imageUrl = await uploadFile(formData.get("image") as File | null, "categories");
@@ -158,15 +207,46 @@ export async function createCategory(formData: FormData) {
   redirect("/admin/categories?success=Category added successfully");
 }
 
+export async function updateCategory(formData: FormData) {
+  const id = String(formData.get("id") || "");
+  const name = String(formData.get("name") || "").trim();
+  const slugInput = String(formData.get("slug") || "").trim();
+  const parentId = String(formData.get("parent_id") || "");
+  const status = String(formData.get("status") || "active");
+
+  if (!id) throw new Error("Category ID missing");
+  if (!name) throw new Error("Category name is required");
+
+  const slug = slugInput ? slugify(slugInput) : slugify(name);
+  const imageUrl = await uploadFile(formData.get("image") as File | null, "categories");
+
+  const updateData: any = {
+    name,
+    slug,
+    parent_id: parentId || null,
+    status,
+  };
+
+  if (imageUrl) updateData.image = imageUrl;
+
+  const { error } = await supabaseAdmin.from("categories").update(updateData).eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/categories");
+  revalidatePath(`/admin/categories/${id}/edit`);
+  revalidatePath("/");
+  revalidatePath("/shop");
+
+  redirect("/admin/categories?success=Category updated successfully");
+}
+
 export async function deleteCategory(formData: FormData) {
   const id = String(formData.get("id") || "");
 
   if (!id) throw new Error("Category ID missing");
 
-  const { error } = await supabaseAdmin
-    .from("categories")
-    .delete()
-    .eq("id", id);
+  const { error } = await supabaseAdmin.from("categories").delete().eq("id", id);
 
   if (error) throw new Error(error.message);
 
@@ -175,4 +255,14 @@ export async function deleteCategory(formData: FormData) {
   revalidatePath("/shop");
 
   redirect("/admin/categories?success=Category deleted successfully");
+}
+
+export async function updateOrderStatus(formData: FormData) {
+  const id = String(formData.get("id") || "");
+  const order_status = String(formData.get("order_status") || "pending");
+
+  await supabaseAdmin.from("orders").update({ order_status }).eq("id", id);
+
+  revalidatePath("/admin/orders");
+  redirect("/admin/orders?success=Order updated successfully");
 }

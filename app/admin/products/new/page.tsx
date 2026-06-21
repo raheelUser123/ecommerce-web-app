@@ -99,7 +99,12 @@ export default async function ProductsPage({
                         >
                           View
                         </Link>
-
+<Link
+  href={`/admin/products/${p.id}/edit`}
+  className="rounded-xl border px-3 py-2 text-xs font-bold hover:bg-zinc-50"
+>
+  Edit
+</Link>
                         <form action={deleteProduct}>
                           <input type="hidden" name="id" value={p.id} />
                           <button

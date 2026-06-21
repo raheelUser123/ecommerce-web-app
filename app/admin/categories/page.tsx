@@ -133,7 +133,12 @@ export default async function CategoriesPage({
                         >
                           View
                         </Link>
-
+<Link
+  href={`/admin/categories/${cat.id}/edit`}
+  className="rounded-xl border px-3 py-2 text-xs font-bold hover:bg-zinc-50"
+>
+  Edit
+</Link>
                         <form action={deleteCategory}>
                           <input type="hidden" name="id" value={cat.id} />
                           <button
