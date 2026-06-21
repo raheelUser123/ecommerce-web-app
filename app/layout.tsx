@@ -38,7 +38,7 @@ export default function RootLayout({
               <Link href="/" className="hover:text-primary transition-colors py-2">Home</Link>
               <Link href="/shop" className="hover:text-primary transition-colors py-2">Shop Catalog</Link>
               <Link href="/cart" className="hover:text-primary transition-colors py-2">Shopping Cart</Link>
-              <Link href="/admin" className="hover:text-primary transition-colors py-2">Admin Area</Link>
+              {/* <Link href="/admin" className="hover:text-primary transition-colors py-2">Admin Area</Link> */}
             </nav>
 
             <div className="flex items-center gap-4">

@@ -10,12 +10,17 @@ interface Props {
 }
 
 export default async function ProductPage({ params }: Props) {
-  const { data: p } = await supabase
-    .from("products")
-    .select("*, product_variations(*), product_gallery(*), reviews(*)")
-    .eq("slug", params.slug)
-    .eq("status", "active")
-    .single();
+ const { data: p } = await supabase
+  .from("products")
+  .select(`
+    *,
+    product_variations(*),
+    product_gallery(*),
+    reviews(*)
+  `)
+  .eq("slug", params.slug)
+  .eq("status", "active")
+  .single();
 
   if (!p) {
     return (

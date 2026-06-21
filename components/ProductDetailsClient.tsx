@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createReview } from "@/app/actions/review";
 import {
   Star,
@@ -16,8 +17,9 @@ import {
 
 export default function ProductDetailsClient({ product }: { product: any }) {
   const variations = product.product_variations || [];
-  const gallery = product.product_gallery || [];
-  const reviews = (product.reviews || []).filter((r: any) => r.status === "approved");
+  const reviews = (product.reviews || []).filter(
+    (r: any) => r.status === "approved"
+  );
 
   const [selectedVariation, setSelectedVariation] = useState<any>(
     variations[0] || null
@@ -30,17 +32,27 @@ export default function ProductDetailsClient({ product }: { product: any }) {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
 
+  const searchParams = useSearchParams();
+  const reviewSuccess = searchParams.get("review") === "success";
+
   const price = Number(selectedVariation?.price || product.price || 0);
   const stock = Number(selectedVariation?.stock || 0);
   const inStock = selectedVariation ? stock > 0 : true;
   const totalReviews = reviews.length;
 
+  const galleryImages = Array.from(
+    new Set(
+      [
+        product.main_image,
+        ...(product.product_gallery || []).map((g: any) => g.image),
+        ...(product.product_variations || []).map((v: any) => v.image),
+      ].filter(Boolean)
+    )
+  );
+
   function selectVariation(v: any) {
     setSelectedVariation(v);
-
-    if (v.image) {
-      setMainImage(v.image);
-    }
+    if (v.image) setMainImage(v.image);
   }
 
   function addToCart() {
@@ -63,24 +75,13 @@ export default function ProductDetailsClient({ product }: { product: any }) {
       (x: any) => x.id === item.id && x.variation_id === item.variation_id
     );
 
-    if (existing) {
-      existing.quantity += quantity;
-    } else {
-      cart.push(item);
-    }
+    if (existing) existing.quantity += quantity;
+    else cart.push(item);
 
     localStorage.setItem("cart", JSON.stringify(cart));
     window.dispatchEvent(new Event("cart-updated"));
     alert("Product added to cart");
   }
-
-  const galleryImages = Array.from(
-  new Set([
-    product.main_image,
-    ...(product.product_gallery || []).map((g: any) => g.image),
-    ...(product.product_variations || []).map((v: any) => v.image),
-  ].filter(Boolean))
-);
 
   return (
     <div className="space-y-16 pb-12">
@@ -95,35 +96,27 @@ export default function ProductDetailsClient({ product }: { product: any }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="space-y-4">
           <div className="relative rounded-3xl overflow-hidden bg-zinc-50 border border-zinc-200 aspect-square">
-            <img
-              src={mainImage}
-              alt={product.title}
-              className="w-full h-full object-cover"
-            />
+            <img src={mainImage} alt={product.title} className="w-full h-full object-cover" />
           </div>
 
           {galleryImages.length > 0 && (
-  <div className="grid grid-cols-5 gap-3">
-    {galleryImages.map((img: string, index: number) => (
-      <button
-        key={`${img}-${index}`}
-        type="button"
-        onClick={() => setMainImage(img)}
-        className={`rounded-xl overflow-hidden bg-zinc-50 border aspect-square ${
-          mainImage === img
-            ? "border-primary ring-2 ring-primary/20"
-            : "border-zinc-200"
-        }`}
-      >
-        <img
-          src={img}
-          alt="Product gallery"
-          className="w-full h-full object-cover"
-        />
-      </button>
-    ))}
-  </div>
-)}
+            <div className="grid grid-cols-5 gap-3">
+              {galleryImages.map((img: any, index: number) => (
+                <button
+                  key={`${img}-${index}`}
+                  type="button"
+                  onClick={() => setMainImage(img)}
+                  className={`rounded-xl overflow-hidden bg-zinc-50 border aspect-square ${
+                    mainImage === img
+                      ? "border-primary ring-2 ring-primary/20"
+                      : "border-zinc-200"
+                  }`}
+                >
+                  <img src={img} alt="Product gallery" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="card p-8">
@@ -145,9 +138,7 @@ export default function ProductDetailsClient({ product }: { product: any }) {
                     <Star key={i} className="w-3.5 h-3.5 fill-current" />
                   ))}
                 </div>
-                <span className="font-semibold text-dark">
-                  ({totalReviews} Reviews)
-                </span>
+                <span className="font-semibold text-dark">({totalReviews} Reviews)</span>
               </div>
             </div>
 
@@ -186,9 +177,7 @@ export default function ProductDetailsClient({ product }: { product: any }) {
                         }`}
                       >
                         {isActive && <Check className="w-3.5 h-3.5" />}
-                        <span className="text-xs">
-                          {v.name}: {v.value}
-                        </span>
+                        <span className="text-xs">{v.name}: {v.value}</span>
                         <span className="text-xs font-bold">
                           ${Number(v.price).toFixed(2)}
                         </span>
@@ -286,29 +275,8 @@ export default function ProductDetailsClient({ product }: { product: any }) {
             <div className="space-y-3">
               <h2 className="text-xl font-extrabold text-dark">Size Guide</h2>
               <p className="text-muted text-sm">
-                Please check the selected variation before purchase. Sizes may vary by product type.
+                Please check selected variation before purchase.
               </p>
-
-              <div className="overflow-auto">
-                <table className="w-full text-sm border">
-                  <thead className="bg-zinc-50">
-                    <tr>
-                      <th className="p-3 text-left border">Variant</th>
-                      <th className="p-3 text-left border">Price</th>
-                      <th className="p-3 text-left border">Stock</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {variations.map((v: any) => (
-                      <tr key={v.id}>
-                        <td className="p-3 border">{v.name}: {v.value}</td>
-                        <td className="p-3 border">${Number(v.price).toFixed(2)}</td>
-                        <td className="p-3 border">{v.stock || 0}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
             </div>
           )}
 
@@ -317,8 +285,6 @@ export default function ProductDetailsClient({ product }: { product: any }) {
               <h2 className="text-xl font-extrabold text-dark">Shipping Policy</h2>
               <p className="text-muted text-sm leading-relaxed">
                 Orders are processed within 1–3 business days. Delivery time depends on your location.
-                Free shipping may apply on eligible orders. Return requests are accepted within 30 days
-                if the product is unused and in original packaging.
               </p>
             </div>
           )}
@@ -328,29 +294,37 @@ export default function ProductDetailsClient({ product }: { product: any }) {
               <h2 className="text-xl font-extrabold text-dark">
                 Customer Reviews ({totalReviews})
               </h2>
-<form action={createReview} className="border border-zinc-200 rounded-xl p-5 space-y-4">
-  <input type="hidden" name="product_id" value={product.id} />
-  <input type="hidden" name="product_slug" value={product.slug} />
 
-  <h3 className="font-bold text-dark">Write a Review</h3>
+              {reviewSuccess && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
+                  ✅ Review has been submitted successfully. It will show after admin approval.
+                </div>
+              )}
 
-  <input name="customer_name" required placeholder="Your name" className="input" />
-  <input name="customer_email" type="email" placeholder="Your email" className="input" />
+              <form action={createReview} className="border border-zinc-200 rounded-xl p-5 space-y-4">
+                <input type="hidden" name="product_id" value={product.id} />
+                <input type="hidden" name="product_slug" value={product.slug} />
 
-  <select name="rating" className="input" defaultValue="5">
-    <option value="5">5 Stars</option>
-    <option value="4">4 Stars</option>
-    <option value="3">3 Stars</option>
-    <option value="2">2 Stars</option>
-    <option value="1">1 Star</option>
-  </select>
+                <h3 className="font-bold text-dark">Write a Review</h3>
 
-  <textarea name="review" required rows={4} placeholder="Write your review..." className="input" />
+                <input name="customer_name" required placeholder="Your name" className="input" />
+                <input name="customer_email" type="email" placeholder="Your email" className="input" />
 
-  <button type="submit" className="btn btn-primary">
-    Submit Review
-  </button>
-</form>
+                <select name="rating" className="input" defaultValue="5">
+                  <option value="5">5 Stars</option>
+                  <option value="4">4 Stars</option>
+                  <option value="3">3 Stars</option>
+                  <option value="2">2 Stars</option>
+                  <option value="1">1 Star</option>
+                </select>
+
+                <textarea name="review" required rows={4} placeholder="Write your review..." className="input" />
+
+                <button type="submit" className="btn btn-primary">
+                  Submit Review
+                </button>
+              </form>
+
               {reviews.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {reviews.map((r: any) => (
@@ -366,6 +340,9 @@ export default function ProductDetailsClient({ product }: { product: any }) {
                         ))}
                       </div>
                       <p className="text-muted text-xs italic">"{r.review}"</p>
+                      <p className="text-xs font-bold text-dark">
+                        — {r.customer_name || "Customer"}
+                      </p>
                     </div>
                   ))}
                 </div>
