@@ -391,3 +391,25 @@ export async function updateOrderStatus(formData: FormData) {
   revalidatePath("/admin/orders");
   redirect("/admin/orders?success=Order updated successfully");
 }
+export async function updateReviewStatus(formData: FormData) {
+  const id = String(formData.get("id") || "");
+  const status = String(formData.get("status") || "pending");
+
+  if (!id) throw new Error("Review ID missing");
+
+  await supabaseAdmin.from("reviews").update({ status }).eq("id", id);
+
+  revalidatePath("/admin/reviews");
+  redirect("/admin/reviews?success=Review updated successfully");
+}
+
+export async function deleteReview(formData: FormData) {
+  const id = String(formData.get("id") || "");
+
+  if (!id) throw new Error("Review ID missing");
+
+  await supabaseAdmin.from("reviews").delete().eq("id", id);
+
+  revalidatePath("/admin/reviews");
+  redirect("/admin/reviews?success=Review deleted successfully");
+}

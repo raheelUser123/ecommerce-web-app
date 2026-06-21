@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { createReview } from "@/app/actions/review";
 import {
   Star,
   ShieldCheck,
@@ -16,7 +17,7 @@ import {
 export default function ProductDetailsClient({ product }: { product: any }) {
   const variations = product.product_variations || [];
   const gallery = product.product_gallery || [];
-  const reviews = product.reviews || [];
+  const reviews = (product.reviews || []).filter((r: any) => r.status === "approved");
 
   const [selectedVariation, setSelectedVariation] = useState<any>(
     variations[0] || null
@@ -327,7 +328,29 @@ export default function ProductDetailsClient({ product }: { product: any }) {
               <h2 className="text-xl font-extrabold text-dark">
                 Customer Reviews ({totalReviews})
               </h2>
+<form action={createReview} className="border border-zinc-200 rounded-xl p-5 space-y-4">
+  <input type="hidden" name="product_id" value={product.id} />
+  <input type="hidden" name="product_slug" value={product.slug} />
 
+  <h3 className="font-bold text-dark">Write a Review</h3>
+
+  <input name="customer_name" required placeholder="Your name" className="input" />
+  <input name="customer_email" type="email" placeholder="Your email" className="input" />
+
+  <select name="rating" className="input" defaultValue="5">
+    <option value="5">5 Stars</option>
+    <option value="4">4 Stars</option>
+    <option value="3">3 Stars</option>
+    <option value="2">2 Stars</option>
+    <option value="1">1 Star</option>
+  </select>
+
+  <textarea name="review" required rows={4} placeholder="Write your review..." className="input" />
+
+  <button type="submit" className="btn btn-primary">
+    Submit Review
+  </button>
+</form>
               {reviews.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {reviews.map((r: any) => (

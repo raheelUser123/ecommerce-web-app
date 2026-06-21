@@ -50,6 +50,7 @@ export default async function AdminDashboard() {
         <Link className="btn justify-center" href="/admin/categories">Categories</Link>
         <Link className="btn justify-center" href="/admin/orders">Orders</Link>
         <Link className="btn justify-center" href="/admin/users">Users</Link>
+        <Link className="btn justify-center" href="/admin/reviews">Reviews</Link>
       </div>
     </div>
   );
