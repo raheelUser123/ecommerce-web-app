@@ -73,11 +73,13 @@ export default function ProductDetailsClient({ product }: { product: any }) {
     alert("Product added to cart");
   }
 
-  const galleryImages = [
+  const galleryImages = Array.from(
+  new Set([
     product.main_image,
-    ...gallery.map((g: any) => g.image),
-    ...variations.filter((v: any) => v.image).map((v: any) => v.image),
-  ].filter(Boolean);
+    ...(product.product_gallery || []).map((g: any) => g.image),
+    ...(product.product_variations || []).map((v: any) => v.image),
+  ].filter(Boolean))
+);
 
   return (
     <div className="space-y-16 pb-12">
@@ -100,25 +102,27 @@ export default function ProductDetailsClient({ product }: { product: any }) {
           </div>
 
           {galleryImages.length > 0 && (
-            <div className="grid grid-cols-5 gap-3">
-              {galleryImages.map((img: string, index: number) => (
-                <button
-                  key={`${img}-${index}`}
-                  type="button"
-                  onClick={() => setMainImage(img)}
-                  className={`rounded-xl overflow-hidden bg-zinc-50 border aspect-square ${
-                    mainImage === img ? "border-primary ring-2 ring-primary/20" : "border-zinc-200"
-                  }`}
-                >
-                  <img
-                    src={img}
-                    alt="Product gallery"
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
+  <div className="grid grid-cols-5 gap-3">
+    {galleryImages.map((img: string, index: number) => (
+      <button
+        key={`${img}-${index}`}
+        type="button"
+        onClick={() => setMainImage(img)}
+        className={`rounded-xl overflow-hidden bg-zinc-50 border aspect-square ${
+          mainImage === img
+            ? "border-primary ring-2 ring-primary/20"
+            : "border-zinc-200"
+        }`}
+      >
+        <img
+          src={img}
+          alt="Product gallery"
+          className="w-full h-full object-cover"
+        />
+      </button>
+    ))}
+  </div>
+)}
         </div>
 
         <div className="card p-8">

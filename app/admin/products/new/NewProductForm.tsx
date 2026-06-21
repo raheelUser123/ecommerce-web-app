@@ -27,7 +27,11 @@ export default function NewProductForm({ categories }: { categories: any[] }) {
 
             <div>
               <label className="text-xs font-bold uppercase">Slug</label>
-              <input name="slug" placeholder="auto generate if empty" className="input mt-1" />
+              <input
+                name="slug"
+                placeholder="auto generate if empty"
+                className="input mt-1"
+              />
             </div>
           </div>
 
@@ -39,7 +43,12 @@ export default function NewProductForm({ categories }: { categories: any[] }) {
           <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label className="text-xs font-bold uppercase">Base Price</label>
-              <input name="price" type="number" step="0.01" className="input mt-1" />
+              <input
+                name="price"
+                type="number"
+                step="0.01"
+                className="input mt-1"
+              />
             </div>
 
             <div>
@@ -47,7 +56,9 @@ export default function NewProductForm({ categories }: { categories: any[] }) {
               <select name="category_id" className="input mt-1">
                 <option value="">Select category</option>
                 {categories.map((cat: any) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -67,12 +78,23 @@ export default function NewProductForm({ categories }: { categories: any[] }) {
 
           <div>
             <label className="text-xs font-bold uppercase">Main Image</label>
-            <input type="file" name="main_image" accept="image/*" className="input mt-1" />
+            <input
+              type="file"
+              name="main_image"
+              accept="image/*"
+              className="input mt-1"
+            />
           </div>
 
           <div>
             <label className="text-xs font-bold uppercase">Gallery Images</label>
-            <input type="file" name="gallery" accept="image/*" multiple className="input mt-1" />
+            <input
+              type="file"
+              name="gallery"
+              accept="image/*"
+              multiple
+              className="input mt-1"
+            />
           </div>
         </div>
 
@@ -90,14 +112,19 @@ export default function NewProductForm({ categories }: { categories: any[] }) {
           </div>
 
           {variations.map((id, index) => (
-            <div key={id} className="border border-zinc-200 rounded-xl p-4 space-y-3">
+            <div
+              key={id}
+              className="border border-zinc-200 rounded-xl p-4 space-y-3"
+            >
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-dark">Variation {index + 1}</h3>
 
                 {variations.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => setVariations(variations.filter((v) => v !== id))}
+                    onClick={() =>
+                      setVariations(variations.filter((v) => v !== id))
+                    }
                     className="text-xs font-bold text-rose-600"
                   >
                     Remove
@@ -106,14 +133,49 @@ export default function NewProductForm({ categories }: { categories: any[] }) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input name="variation_name" placeholder="Name e.g. Size" className="input" />
-                <input name="variation_value" placeholder="Value e.g. Small" className="input" />
+                <input
+                  name="variation_name"
+                  placeholder="Name e.g. Size"
+                  className="input"
+                />
+                <input
+                  name="variation_value"
+                  placeholder="Value e.g. Small"
+                  className="input"
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input name="variation_price" type="number" step="0.01" placeholder="Price" className="input" />
-                <input name="variation_stock" type="number" placeholder="Stock" className="input" />
-                <input name="variation_sku" placeholder="SKU" className="input" />
+                <input
+                  name="variation_price"
+                  type="number"
+                  step="0.01"
+                  placeholder="Price"
+                  className="input"
+                />
+                <input
+                  name="variation_stock"
+                  type="number"
+                  placeholder="Stock"
+                  className="input"
+                />
+                <input
+                  name="variation_sku"
+                  placeholder="SKU"
+                  className="input"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase">
+                  Variation Image
+                </label>
+                <input
+                  type="file"
+                  name="variation_image"
+                  accept="image/*"
+                  className="input mt-1"
+                />
               </div>
             </div>
           ))}

@@ -16,16 +16,23 @@ async function uploadFile(file: File | null, folder: string) {
   if (!file || file.size === 0) return "";
 
   const ext = file.name.split(".").pop();
-  const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const fileName = `${folder}/${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2)}.${ext}`;
 
-  const { error } = await supabaseAdmin.storage.from("products").upload(fileName, file, {
-    cacheControl: "3600",
-    upsert: false,
-  });
+  const { error } = await supabaseAdmin.storage
+    .from("products")
+    .upload(fileName, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
 
   if (error) throw new Error(error.message);
 
-  const { data } = supabaseAdmin.storage.from("products").getPublicUrl(fileName);
+  const { data } = supabaseAdmin.storage
+    .from("products")
+    .getPublicUrl(fileName);
+
   return data.publicUrl;
 }
 
@@ -41,7 +48,10 @@ export async function createProduct(formData: FormData) {
 
   const slug = slugInput ? slugify(slugInput) : slugify(title);
 
-  const mainImageUrl = await uploadFile(formData.get("main_image") as File | null, "main");
+  const mainImageUrl = await uploadFile(
+    formData.get("main_image") as File | null,
+    "main"
+  );
 
   const { data: product, error: productError } = await supabaseAdmin
     .from("products")
@@ -71,6 +81,7 @@ export async function createProduct(formData: FormData) {
 
   for (let i = 0; i < galleryFiles.length; i++) {
     const file = galleryFiles[i];
+
     if (file && file.size > 0) {
       const imageUrl = await uploadFile(file, "gallery");
 
@@ -87,6 +98,7 @@ export async function createProduct(formData: FormData) {
   const variationPrices = formData.getAll("variation_price");
   const variationStocks = formData.getAll("variation_stock");
   const variationSkus = formData.getAll("variation_sku");
+  const variationImages = formData.getAll("variation_image") as File[];
 
   for (let i = 0; i < variationNames.length; i++) {
     const name = String(variationNames[i] || "");
@@ -96,6 +108,11 @@ export async function createProduct(formData: FormData) {
     const sku = String(variationSkus[i] || "");
 
     if (name && value && vPrice > 0) {
+      const variationImageUrl = await uploadFile(
+        variationImages[i] || null,
+        "variations"
+      );
+
       await supabaseAdmin.from("product_variations").insert({
         product_id: product.id,
         name,
@@ -103,6 +120,7 @@ export async function createProduct(formData: FormData) {
         price: vPrice,
         stock,
         sku,
+        image: variationImageUrl,
       });
     }
   }
@@ -146,7 +164,6 @@ export async function updateProduct(formData: FormData) {
   if (!title) throw new Error("Product title is required");
 
   const slug = slugInput ? slugify(slugInput) : slugify(title);
-  const mainImageFile = formData.get("main_image") as File | null;
 
   const updateData: any = {
     title,
@@ -156,10 +173,18 @@ export async function updateProduct(formData: FormData) {
     status,
   };
 
+  const mainImageFile = formData.get("main_image") as File | null;
   const newImageUrl = await uploadFile(mainImageFile, "main");
-  if (newImageUrl) updateData.main_image = newImageUrl;
 
-  const { error } = await supabaseAdmin.from("products").update(updateData).eq("id", id);
+  if (newImageUrl) {
+    updateData.main_image = newImageUrl;
+  }
+
+  const { error } = await supabaseAdmin
+    .from("products")
+    .update(updateData)
+    .eq("id", id);
+
   if (error) throw new Error(error.message);
 
   await supabaseAdmin.from("product_categories").delete().eq("product_id", id);
@@ -171,6 +196,93 @@ export async function updateProduct(formData: FormData) {
     });
   }
 
+  const galleryFiles = formData.getAll("gallery") as File[];
+
+  for (let i = 0; i < galleryFiles.length; i++) {
+    const file = galleryFiles[i];
+
+    if (file && file.size > 0) {
+      const imageUrl = await uploadFile(file, "gallery");
+
+      await supabaseAdmin.from("product_gallery").insert({
+        product_id: id,
+        image: imageUrl,
+        sort_order: i,
+      });
+    }
+  }
+
+  const variationIds = formData.getAll("variation_id");
+  const variationNames = formData.getAll("variation_name");
+  const variationValues = formData.getAll("variation_value");
+  const variationPrices = formData.getAll("variation_price");
+  const variationStocks = formData.getAll("variation_stock");
+  const variationSkus = formData.getAll("variation_sku");
+  const variationImages = formData.getAll("variation_image") as File[];
+
+  for (let i = 0; i < variationIds.length; i++) {
+    const variationId = String(variationIds[i] || "");
+    const name = String(variationNames[i] || "");
+    const value = String(variationValues[i] || "");
+    const variationPrice = Number(variationPrices[i] || 0);
+    const stock = Number(variationStocks[i] || 0);
+    const sku = String(variationSkus[i] || "");
+
+    const updateVariationData: any = {
+      name,
+      value,
+      price: variationPrice,
+      stock,
+      sku,
+    };
+
+    const imageUrl = await uploadFile(variationImages[i] || null, "variations");
+
+    if (imageUrl) {
+      updateVariationData.image = imageUrl;
+    }
+
+    if (variationId) {
+      await supabaseAdmin
+        .from("product_variations")
+        .update(updateVariationData)
+        .eq("id", variationId);
+    }
+  }
+
+  const newVariationNames = formData.getAll("new_variation_name");
+  const newVariationValues = formData.getAll("new_variation_value");
+  const newVariationPrices = formData.getAll("new_variation_price");
+  const newVariationStocks = formData.getAll("new_variation_stock");
+  const newVariationSkus = formData.getAll("new_variation_sku");
+  const newVariationImages = formData.getAll("new_variation_image") as File[];
+
+  for (let i = 0; i < newVariationNames.length; i++) {
+    const name = String(newVariationNames[i] || "");
+    const value = String(newVariationValues[i] || "");
+    const newPrice = Number(newVariationPrices[i] || 0);
+    const stock = Number(newVariationStocks[i] || 0);
+    const sku = String(newVariationSkus[i] || "");
+
+    if (name && value && newPrice > 0) {
+      const imageUrl = await uploadFile(
+        newVariationImages[i] || null,
+        "variations"
+      );
+
+      await supabaseAdmin.from("product_variations").insert({
+        product_id: id,
+        name,
+        value,
+        price: newPrice,
+        stock,
+        sku,
+        image: imageUrl,
+      });
+    }
+  }
+
+  revalidatePath("/admin");
   revalidatePath("/admin/products");
   revalidatePath(`/admin/products/${id}/edit`);
   revalidatePath("/");
@@ -188,7 +300,11 @@ export async function createCategory(formData: FormData) {
   if (!name) throw new Error("Category name is required");
 
   const slug = slugInput ? slugify(slugInput) : slugify(name);
-  const imageUrl = await uploadFile(formData.get("image") as File | null, "categories");
+
+  const imageUrl = await uploadFile(
+    formData.get("image") as File | null,
+    "categories"
+  );
 
   const { error } = await supabaseAdmin.from("categories").insert({
     name,
@@ -218,7 +334,11 @@ export async function updateCategory(formData: FormData) {
   if (!name) throw new Error("Category name is required");
 
   const slug = slugInput ? slugify(slugInput) : slugify(name);
-  const imageUrl = await uploadFile(formData.get("image") as File | null, "categories");
+
+  const imageUrl = await uploadFile(
+    formData.get("image") as File | null,
+    "categories"
+  );
 
   const updateData: any = {
     name,
@@ -227,9 +347,14 @@ export async function updateCategory(formData: FormData) {
     status,
   };
 
-  if (imageUrl) updateData.image = imageUrl;
+  if (imageUrl) {
+    updateData.image = imageUrl;
+  }
 
-  const { error } = await supabaseAdmin.from("categories").update(updateData).eq("id", id);
+  const { error } = await supabaseAdmin
+    .from("categories")
+    .update(updateData)
+    .eq("id", id);
 
   if (error) throw new Error(error.message);
 
