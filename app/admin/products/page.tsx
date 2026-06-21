@@ -1,13 +1,53 @@
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-export default async function Page() {
-  const { data } = await supabase.from("products").select("*").limit(50);
+
+export default async function ProductsPage() {
+  const { data: products } = await supabase
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: false });
+
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-4">Products</h1>
-      <div className="card">
-        <pre className="whitespace-pre-wrap text-sm">
-          {JSON.stringify(data, null, 2)}
-        </pre>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Products</h1>
+
+        <Link
+          href="/admin/products/new"
+          className="btn btn-primary"
+        >
+          + Add Product
+        </Link>
+      </div>
+
+      <div className="card overflow-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left p-3">Image</th>
+              <th className="text-left p-3">Title</th>
+              <th className="text-left p-3">Slug</th>
+              <th className="text-left p-3">Status</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {products?.map((p: any) => (
+              <tr key={p.id} className="border-b">
+                <td className="p-3">
+                  <img
+                    src={p.main_image || "/placeholder.png"}
+                    className="w-14 h-14 object-cover rounded"
+                  />
+                </td>
+
+                <td className="p-3">{p.title}</td>
+                <td className="p-3">{p.slug}</td>
+                <td className="p-3">{p.status}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
